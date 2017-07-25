@@ -4,12 +4,12 @@ import re
 import glob
 import sys
 
+# global variables per folder, requests
 url = 'http://54.144.84.97/api/v1/feed_versions'
 auth_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyMTksImV4cCI6MTUwMDc1ODI4NH0.Dj6cvb1zgxsfx7TbKzA7NZkEGoJa87bhGBa-QrHhG3o'
-feed_onestop_id = 'f-r3dp-wwwactionactgovau'
-folderName = 'action'
 
-def makeFolderRequests(folderName): 
+# goes through one folder; iterates through all files to make requests
+def makeFolderRequests(folderName, feed_onestop_id): 
 	owd = os.getcwd()
 	changedirectory = './' + folderName
 	os.chdir(changedirectory)
@@ -19,12 +19,14 @@ def makeFolderRequests(folderName):
 
 	for name in fileNames: 
 		response = makeOneRequest(name, folderName, url, feed_onestop_id, auth_token)
+		# failed request printed out here for debugging purposes 
 		if response.status_code != 200: 
 			print response.status_code
 			print response.text
 
 	os.chdir(owd)
 
+# makes one request per file 
 def makeOneRequest(fileName, folderName, url, feed_onestop_id, auth_token): 
 	print "Running", fileName
 
@@ -42,20 +44,16 @@ def makeOneRequest(fileName, folderName, url, feed_onestop_id, auth_token):
 	r = requests.post(url, headers=headers, files=files, data=data)
 	return r
 
-
-def iterateFolders(): 
-	rootdir = './transit_feeds'
-	for filename in os.listdir(rootdir):
-		print filename
-
+# returns only the zipped folders 
 def retrieveFileNames(folderName):
 	return glob.glob('*.zip')
 
 
 def main(): 
+	# arguments match folder from GTFS feed to feed_onestop_id
 	folderName = sys.argv[1]
 	feed_onestop_id = sys.argv[2]
-	makeFolderRequests(folderName)
+	makeFolderRequests(folderName, feed_onestop_id)
 
 
 if __name__ == "__main__":

@@ -3,7 +3,9 @@ import csv
 import re
 import sys
 
-def searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page):
+# from the CSV file, looks for a URL (sourceOfFeed) that matches an entity in the 
+# html GTFS Page. If found, returns the GTFS name. If not, returns "Failed."
+def searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger):
 	position = gtfs_page.find(sourceOfFeed)
 
 	if position != -1: 
@@ -12,12 +14,17 @@ def searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page)
 
 		if gtfs_html_group: 
 			return gtfs_html_group.group(2)
-		else:
-			return "Failed."
-	else: 
-		return "Failed."
+		elif debugger:
+			print "Failed: No regex match.", operatorName
+	elif debugger: 
+		print "Failed: No match.", operatorName
+	# if nothing is returned (false value) then "Failed." is printed.
 
-def searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page):
+# From CSV file from Transitland, looks for a matching name in the html GTFS page. 
+# If found, returns the GTFS id name. 
+# Example: operatorName = NAME 
+# Search for: >NAME< --> and uses regex to find GTFS id name. 
+def searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger):
 	search = ">" + operatorName + "<"
 	position = gtfs_page.find(search)
 
@@ -27,61 +34,65 @@ def searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page):
 
 		if gtfs_html_group: 
 			return gtfs_html_group.group(2)
-		else:
-			print "Failure, Round 2."
+		elif debugger:
+			print "Failure 2: Regex matches none.", operatorName
+	elif debugger: 
+		print "Failure 2: No match.", operatorName
+	# if nothing is returned (false) then "Failure." is printed 
 
-def parseFile(gtfs_page):
-	count = 0
-	total_count = 0
-	source_count = 0
-	name_count = 0
+# goes through CSV file, makes 1-2 calls to attempt to find a match in GTFS
+# HTML document.
+def parseFile(gtfs_page, debugger):
+	SUCCESS_COUNT = 0
+	TOTAL_COUNT = 0
+	SOURCE_COUNT = 0
+	NAME_COUNT = 0
+	newCSVFolder = open("NewFeeds.csv", "w+")
 
 	with open('feeds.csv', 'rU') as f:
 		reader = csv.reader(f)
+
 		for row in reader:
+			TOTAL_COUNT = TOTAL_COUNT + 1
 			if len(row) == 8:
-				total_count = total_count + 1
 				continue
+
 			else:
 				feed_onestop_id = row[0]
 				groups = re.match('(.+)\/((.+).zip)', row[1])
-				sourceOfFeed = ''
+				sourceOfFeed = row[1]
 				operatorName = row[5]
 
 				if groups:
 					sourceOfFeed = groups.group(1)
-				else:
-					sourceOfFeed = row[1]
 
-				match = searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page)
+				match = searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
 				
 				if match and match != "Failed.": 
-					source_count = source_count + 1
-					# print "Source Match: ", operatorName
-					# print "SRC: ", match
-					
-
-				total_count = total_count + 1
-
-				if match == "Failed.":
-					match = searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page)
+					SOURCE_COUNT = SOURCE_COUNT + 1 
+				else: 
+					match = searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
 					if match:
-						name_count = name_count + 1
-
+						NAME_COUNT = NAME_COUNT + 1
+		
 				if match:
 					row.append(match)
-					count = count + 1
+					newCSVFolder.write(row[0] + "," + row[1] + "," + row[2] + "," + row[3] + 
+						"," + row[4] + "," + row[5] + "," + row[6] + "," + row[7] + "\n")
+					SUCCESS_COUNT = SUCCESS_COUNT + 1 
 
-	print "Source Count ", source_count
-	print "name_count ", name_count
-	print "Successful Count: ", count
-	print "Total Count: ", total_count
+
+	print "Source Count ", SOURCE_COUNT
+	print "Name Count ", NAME_COUNT
+	print "Successful Count: ", SUCCESS_COUNT
+	print "Total Count: ", TOTAL_COUNT
 
 def main(): 
 	parse = './' + sys.argv[1]
-	print parse
+	debugger = sys.argv[2] == 'ON'
+	# open up gtfs HTML and removes all newlines 
 	gtfs_page = open(parse, 'r').read().replace('\n', '')
-	parseFile(gtfs_page)
+	parseFile(gtfs_page, debugger)
 
 
 if __name__ == "__main__":

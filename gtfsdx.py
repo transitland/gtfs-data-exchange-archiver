@@ -69,7 +69,7 @@ if __name__ == "__main__":
   args = parser.parse_args()
 
   agencies = get_agencies(cache=args.cache)
-  agencies['data'] = filter(lambda x:x.get('is_official'), agencies['data'])
+  # agencies['data'] = filter(lambda x:x.get('is_official'), agencies['data'])
   agencies['data'] = sorted(agencies['data'], key=lambda x:x.get('dataexchange_id'))
   for agency in agencies['data']:
     dxid = agency.get('dataexchange_id')
