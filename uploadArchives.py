@@ -3,13 +3,17 @@ import requests
 import re
 import glob
 import sys
+import csv
 
 # global variables per folder, requests
 url = 'http://54.144.84.97/api/v1/feed_versions'
-auth_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyMTksImV4cCI6MTUwMDc1ODI4NH0.Dj6cvb1zgxsfx7TbKzA7NZkEGoJa87bhGBa-QrHhG3o'
+auth_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyMTksImV4cCI6MTUwMTM1MzEyN30.jlqHtZoR5h4z6wu3ys03w_n6O0p3RRl_zVveOsav8qc'
 
 # goes through one folder; iterates through all files to make requests
 def makeFolderRequests(folderName, feed_onestop_id): 
+	errorFileStringName = 'errorFile' + folderName + '.csv'
+	errorFile = csv.writer(open(errorFileStringName, 'w'))
+
 	owd = os.getcwd()
 	changedirectory = './' + folderName
 	os.chdir(changedirectory)
@@ -21,6 +25,8 @@ def makeFolderRequests(folderName, feed_onestop_id):
 		response = makeOneRequest(name, folderName, url, feed_onestop_id, auth_token)
 		# failed request printed out here for debugging purposes 
 		if response.status_code != 200: 
+			array = [folderName, feed_onestop_id, response.status_code, response.text]
+			errorFile.writerow(array)
 			print response.status_code
 			print response.text
 
@@ -47,7 +53,6 @@ def makeOneRequest(fileName, folderName, url, feed_onestop_id, auth_token):
 # returns only the zipped folders 
 def retrieveFileNames(folderName):
 	return glob.glob('*.zip')
-
 
 def main(): 
 	# arguments match folder from GTFS feed to feed_onestop_id

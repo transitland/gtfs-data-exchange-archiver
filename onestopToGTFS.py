@@ -42,17 +42,24 @@ def searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, d
 
 # goes through CSV file, makes 1-2 calls to attempt to find a match in GTFS
 # HTML document.
-def parseFile(gtfs_page, debugger):
+def parseFile(gtfs_page, debugger, start_index):
 	SUCCESS_COUNT = 0
 	TOTAL_COUNT = 0
 	SOURCE_COUNT = 0
 	NAME_COUNT = 0
-	newCSVFolder = open("NewFeeds.csv", "w+")
+	currentIndex = 0
+	# newCSVFolder = open("NameFirstNewFeeds.csv", "w+")
+	newCSVDocument = csv.writer(open("CSVNewFeedNames.csv", "w"))
 
 	with open('feeds.csv', 'rU') as f:
 		reader = csv.reader(f)
 
 		for row in reader:
+			if currentIndex < start_index:
+				continue
+			if currentIndex > end_index:
+				break
+
 			TOTAL_COUNT = TOTAL_COUNT + 1
 			if len(row) == 8:
 				continue
@@ -66,19 +73,20 @@ def parseFile(gtfs_page, debugger):
 				if groups:
 					sourceOfFeed = groups.group(1)
 
-				match = searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
+				match = searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
 				
 				if match and match != "Failed.": 
-					SOURCE_COUNT = SOURCE_COUNT + 1 
+					NAME_COUNT = NAME_COUNT + 1 
 				else: 
-					match = searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
+					match = searchForMatchSource(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, debugger)
 					if match:
-						NAME_COUNT = NAME_COUNT + 1
+						SOURCE_COUNT = SOURCE_COUNT + 1
 		
 				if match:
 					row.append(match)
-					newCSVFolder.write(row[0] + "," + row[1] + "," + row[2] + "," + row[3] + 
-						"," + row[4] + "," + row[5] + "," + row[6] + "," + row[7] + "\n")
+					newCSVDocument.writerow(row)
+					# newCSVFolder.write(row[0] + "," + row[1] + "," + row[2] + "," + row[3] + 
+					# 	"," + row[4] + "," + row[5] + "," + row[6] + "," + row[7] + "\n")
 					SUCCESS_COUNT = SUCCESS_COUNT + 1 
 
 
@@ -90,9 +98,14 @@ def parseFile(gtfs_page, debugger):
 def main(): 
 	parse = './' + sys.argv[1]
 	debugger = sys.argv[2] == 'ON'
+	start_index = sys.argv[3] - '0'
+	end_index = sys.argv[4] - '0'
+	
+	print start_index
+	print end_index
 	# open up gtfs HTML and removes all newlines 
-	gtfs_page = open(parse, 'r').read().replace('\n', '')
-	parseFile(gtfs_page, debugger)
+	# gtfs_page = open(parse, 'r').read().replace('\n', '')
+	# parseFile(gtfs_page, debugger, start_index)
 
 
 if __name__ == "__main__":
