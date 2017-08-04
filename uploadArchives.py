@@ -7,12 +7,12 @@ import csv
 
 # global variables per folder, requests
 url = 'http://54.144.84.97/api/v1/feed_versions'
-auth_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyMTksImV4cCI6MTUwMTM1MzEyN30.jlqHtZoR5h4z6wu3ys03w_n6O0p3RRl_zVveOsav8qc'
+auth_token = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoyMTksImV4cCI6MTUwMTQ0ODMyMX0.byD3TnVTSg6Gvv_jiLxgY45ZlhOvjvodtR5h_xryQEY'
 
 # goes through one folder; iterates through all files to make requests
 def makeFolderRequests(folderName, feed_onestop_id): 
-	errorFileStringName = 'errorFile' + folderName + '.csv'
-	errorFile = csv.writer(open(errorFileStringName, 'w'))
+	errorList = []
+	
 
 	owd = os.getcwd()
 	changedirectory = './' + folderName
@@ -26,9 +26,17 @@ def makeFolderRequests(folderName, feed_onestop_id):
 		# failed request printed out here for debugging purposes 
 		if response.status_code != 200: 
 			array = [folderName, feed_onestop_id, response.status_code, response.text]
-			errorFile.writerow(array)
+			errorList.append(array)
+			
 			print response.status_code
 			print response.text
+
+
+	if errorList: 
+		errorFileStringName = 'errorFile' + folderName + '.csv'
+		errorFile = csv.writer(open(errorFileStringName, 'w'))
+		for element in errorList: 
+			errorFile.writerow(element)
 
 	os.chdir(owd)
 
