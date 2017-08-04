@@ -8,7 +8,7 @@ def parseFile(filePath):
 		reader = csv.reader(f)
 		for row in reader:
 			feed_onestop_id = row[0]
-			command = 'python findAverageOperatingDay.py '+ feed_onestop_id
+			command = 'python findAverage.py '+ feed_onestop_id
 			os.system(command)
 
 def main(): 
