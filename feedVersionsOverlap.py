@@ -4,8 +4,10 @@ import json
 import datetime
 import re
 
-THRESHOLD = 0.20 
+## threshold for detecting a tail 
+THRESHOLD = 0.15
 
+# remove tail end
 def cleanTails(updatedScheduledService, end):
 	averageServiceHours = findAverageServiceHours(updatedScheduledService)
 	listOfDates = sorted(updatedScheduledService.keys())
@@ -31,6 +33,7 @@ def cleanTails(updatedScheduledService, end):
 
 
 # we can also get this from earliest start date amd end date, use this to cross-check. 
+# retrieve start and end dates
 def findStartAndEndDates(updatedScheduledService): 
 	startDate = datetime.datetime.max
 	endDate = datetime.datetime.min
@@ -43,6 +46,7 @@ def findStartAndEndDates(updatedScheduledService):
 
 	return startDate, endDate
 
+# convert an dictionary of strings to a dictionary of datetime objects
 def convertToDateTime(scheduled_service): 
 
 	updatedScheduledService = {}
@@ -52,6 +56,7 @@ def convertToDateTime(scheduled_service):
 		
 	return updatedScheduledService
 
+# find average service hours 
 def findAverageServiceHours(updatedScheduledService):
 	averageHours = 0
 	dateCount = len(updatedScheduledService)
@@ -61,7 +66,9 @@ def findAverageServiceHours(updatedScheduledService):
 
 	return averageHours/dateCount
 
-
+# find and interpret schedule by 
+# determining correct start and end dates
+# converting to datetime objects
 def interpretSchedule(element): 
 	if 'data' in element and not 'error' in element['data']:
 		sha1 = element['feed_version_sha1']
@@ -78,6 +85,7 @@ def interpretSchedule(element):
 		if (sha1, id, updatedStart, updatedEnd):
 			return (sha1, id, updatedStart, updatedEnd)
 
+# find overlaps and gaps in feed versions 
 def findOverlap (interpretedSchedule): 
 	
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: x[2])
@@ -139,7 +147,7 @@ def findOverlap (interpretedSchedule):
 
 	return overlapAverage, gapAverage
 
-
+# get feedversion with scheduled stops, and find overlap and gap averages for each feed 
 def getFeedService (onestop_id): 
 	params = (
 	    ('feed_onestop_id', onestop_id),
@@ -159,6 +167,8 @@ def getFeedService (onestop_id):
 	print overlapAverage
 	print gapAverage
 
+# jury is still out whether we need this or not; likely not 
+# retirives feed versions
 def getFeedVersions(onestop_id): 	
 	params = (
 		('feed_onestop_id', onestop_id), 
@@ -167,10 +177,10 @@ def getFeedVersions(onestop_id):
 	r = requests.get('https://transit.land/api/v1/feed_versions', params=params)
 	responseJSON = json.loads(r.text)
 	 
-
+# call function with onestop_id as parameter 
 def main(): 
 	onestop_id = sys.argv[1] 
-	getFeedVersions(onestop_id)
+	# getFeedVersions(onestop_id)
 	getFeedService(onestop_id)
 
 if __name__ == "__main__":
