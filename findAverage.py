@@ -25,17 +25,9 @@ def findAverageType(listOfDates, qualifier, value, sha1):
 			count = count + 1
 			sumHours = sumHours + int(date[1])
 
-		if debug and qualifier == 'week' and date[0].weekday() == 6: 
-			print "Sum Hours", int(date[1])
-			print date[0]
 
 	if count == 0:
 		return count
-
-	if debug: 
-		print value
-		print sumHours
-		print count
 
 	return sumHours/count
 
