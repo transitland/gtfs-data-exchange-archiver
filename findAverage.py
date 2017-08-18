@@ -22,7 +22,6 @@ def findAverageType(listOfDates, qualifier, value, sha1):
 			count = count + 1
 			sumHours = sumHours + int(date[1])
 
-
 	if count == 0:
 		return count
 

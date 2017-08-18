@@ -112,12 +112,10 @@ def writeToCSV (status):
 		arrayWrite = [elem[headerRow[0]], elem[headerRow[1]], elem[headerRow[2]], elem[headerRow[3]], elem[headerRow[4]],
 		elem[headerRow[5]], elem[headerRow[6]], elem[headerRow[7]], elem[headerRow[8]], elem[headerRow[9]],
 		elem[headerRow[10]], elem[headerRow[11]], elem[headerRow[12]]]
-		
+
 		csvDocument.writerow(arrayWrite)
 
 		print arrayWrite
-
-
 
 # find overlaps and gaps in feed versions 
 def findOverlap (interpretedSchedule): 
