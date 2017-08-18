@@ -5,7 +5,7 @@ import datetime
 import re
 import csv
 
-## threshold for detecting a tail 
+## threshold for detecting a tail
 THRESHOLD = 0.15
 
 # remove tail end
@@ -13,7 +13,7 @@ def cleanTails(updatedScheduledService, end):
 	averageServiceHours = findAverageServiceHours(updatedScheduledService)
 	listOfDates = sorted(updatedScheduledService.keys())
 
-	if end: 
+	if end:
 		listOfDates.reverse()
 
 	tailDate = listOfDates[0]
@@ -22,7 +22,7 @@ def cleanTails(updatedScheduledService, end):
 	# updatd start may not reflect actual start, could also be end.
 	updatedStart = tailDate
 
-	for date in listOfDates: 
+	for date in listOfDates:
 		tailValue = updatedScheduledService[date]
 		if tailValue < THRESHOLD * averageServiceHours:
 			continue
@@ -33,14 +33,14 @@ def cleanTails(updatedScheduledService, end):
 	return updatedStart
 
 
-# we can also get this from earliest start date amd end date, use this to cross-check. 
+# we can also get this from earliest start date amd end date, use this to cross-check.
 # retrieve start and end dates
-def findStartAndEndDates(updatedScheduledService): 
+def findStartAndEndDates(updatedScheduledService):
 	startDate = datetime.datetime.max
 	endDate = datetime.datetime.min
 
-	for date in updatedScheduledService: 
-		if date > endDate: 
+	for date in updatedScheduledService:
+		if date > endDate:
 			endDate = date
 		if date < startDate:
 			startDate = date
@@ -48,77 +48,77 @@ def findStartAndEndDates(updatedScheduledService):
 	return startDate, endDate
 
 # convert an dictionary of strings to a dictionary of datetime objects
-def convertToDateTime(scheduled_service): 
+def convertToDateTime(scheduled_service):
 
 	updatedScheduledService = {}
 	for date in scheduled_service:
 		official_date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
 		updatedScheduledService[official_date] = scheduled_service[date]
-		
+
 	return updatedScheduledService
 
-# find average service hours 
+# find average service hours
 def findAverageServiceHours(updatedScheduledService):
 	averageHours = 0
 	dateCount = len(updatedScheduledService)
-	
+
 	for date in updatedScheduledService:
 		averageHours = averageHours + updatedScheduledService[date]
 
 	return float(averageHours)/dateCount
 
-# find and interpret schedule by 
+# find and interpret schedule by
 # determining correct start and end dates
 # converting to datetime objects
-def interpretSchedule(element): 
+def interpretSchedule(element):
 	if 'data' in element and not 'error' in element['data']:
 		sha1 = element['feed_version_sha1']
 		identification = element['id']
 
-		scheduled_service = element['data']['scheduled_service'] 
-		
+		scheduled_service = element['data']['scheduled_service']
+
 		updatedScheduledService = convertToDateTime(scheduled_service)
 		averageServiceHours = findAverageServiceHours(updatedScheduledService)
 		start, end = findStartAndEndDates(updatedScheduledService)
-		
+
 		updatedStart = cleanTails(updatedScheduledService, False)
 		updatedEnd = cleanTails(updatedScheduledService, True)
 
-		# if (updatedStart == start and updatedEnd == end): 
-		# 	updatedStart = None 
+		# if (updatedStart == start and updatedEnd == end):
+		# 	updatedStart = None
 		# 	updatedEnd = None
 
 		rowInfo = {
 			"ID": identification,
-			"currentSha1": sha1, 
+			"currentSha1": sha1,
 			"originalStart": start,
-			"originalEnd": end, 
+			"originalEnd": end,
 			"updatedStart": updatedStart,
-			"updatedEnd": updatedEnd, 
+			"updatedEnd": updatedEnd,
 		}
 
 		if (sha1, id, updatedStart, updatedEnd):
 			return rowInfo
 
-def writeToCSV (status): 
+def writeToCSV (status):
 
 	csvDocument = csv.writer(open('test.csv', "w"))
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference']
 	with open('test.csv', 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
-		writer.writeheader()
+		writer.writeheader() 
 		for elem in status:
 			writer.writerow(elem)
 
 
 
-# find overlaps and gaps in feed versions 
-def findOverlap (interpretedSchedule): 
-	
+# find overlaps and gaps in feed versions
+def findOverlap (interpretedSchedule):
+
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
 
-	currentIndex = 0 
+	currentIndex = 0
 	nextIndex = 1
 
 	status = []
@@ -130,11 +130,11 @@ def findOverlap (interpretedSchedule):
 	# 	next = interpretedSchedule[nextIndex]
 	for current,next in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
 		start = next['updatedStart']
-		end = current['updatedEnd'] 
+		end = current['updatedEnd']
 
 		difference = abs((end - start).days)
 
-		if currentIndex == nextIndex: 
+		if currentIndex == nextIndex:
 			nextIndex = nextIndex + 1
 
 		elif end > start:
@@ -144,16 +144,16 @@ def findOverlap (interpretedSchedule):
 			overlapObject = {
 				"ID": current['ID'],
 				"currentSha1": current['currentSha1'],
-				"nextSha1": next['currentSha1'], 
+				"nextSha1": next['currentSha1'],
 				"originalStart": current['originalStart'].strftime('%Y-%m-%d'),
-				"originalEnd": current['originalEnd'].strftime('%Y-%m-%d'), 
+				"originalEnd": current['originalEnd'].strftime('%Y-%m-%d'),
 				"updatedStart": current['updatedStart'].strftime('%Y-%m-%d'),
-				"updatedEnd": current['updatedEnd'].strftime('%Y-%m-%d'), 
-				"overlapStart": end.strftime('%Y-%m-%d'), 
-				"overlapEnd": start.strftime('%Y-%m-%d'), 
+				"updatedEnd": current['updatedEnd'].strftime('%Y-%m-%d'),
+				"overlapStart": end.strftime('%Y-%m-%d'),
+				"overlapEnd": start.strftime('%Y-%m-%d'),
 				"overlapDifference": difference,
 				"gapStart": '',
-				"gapEnd": '', 
+				"gapEnd": '',
 				"gapDifference":''
 			}
 
@@ -166,15 +166,15 @@ def findOverlap (interpretedSchedule):
 
 		elif start > end:
 			# status.append("Gap: " + str(difference) + " " + str(start) + " and " + str(end))
-			
+
 			gapObject = {
 				"ID": current['ID'],
 				"currentSha1": current['currentSha1'],
-				"nextSha1": next['currentSha1'], 
+				"nextSha1": next['currentSha1'],
 				"originalStart": current['originalStart'].strftime('%Y-%m-%d'),
-				"originalEnd": current['originalEnd'].strftime('%Y-%m-%d'), 
+				"originalEnd": current['originalEnd'].strftime('%Y-%m-%d'),
 				"updatedStart": current['updatedStart'].strftime('%Y-%m-%d'),
-				"updatedEnd": current['updatedEnd'].strftime('%Y-%m-%d'), 
+				"updatedEnd": current['updatedEnd'].strftime('%Y-%m-%d'),
 				"gapStart": end.strftime('%Y-%m-%d'),
 				"gapEnd": start.strftime('%Y-%m-%d'),
 				"gapDifference": difference,
@@ -186,11 +186,11 @@ def findOverlap (interpretedSchedule):
 			status.append(gapObject)
 
 			currentIndex = currentIndex + 1
-			
+
 			gapValues[0] += difference
 			gapValues[1] += 1
 
-		if nextIndex >= len(interpretedSchedule) - 1: 
+		if nextIndex >= len(interpretedSchedule) - 1:
 			currentIndex = currentIndex + 1
 			nextIndex = currentIndex + 1
 
@@ -204,15 +204,15 @@ def findOverlap (interpretedSchedule):
 	overlapAverage = 0
 	gapAverage = 0
 
-	if overlapValues[1]: 
+	if overlapValues[1]:
 		overlapAverage = overlapValues[0]/overlapValues[1]
-	if gapValues[1]: 
+	if gapValues[1]:
 		gapAverage = float(gapValues[0])/gapValues[1]
 
 	return overlapAverage, gapAverage
 
-# get feedversion with scheduled stops, and find overlap and gap averages for each feed 
-def getFeedService (onestop_id): 
+# get feedversion with scheduled stops, and find overlap and gap averages for each feed
+def getFeedService (onestop_id):
 	params = (
 	    ('feed_onestop_id', onestop_id),
 	    ('type', 'FeedVersionInfoStatistics'),
@@ -220,12 +220,12 @@ def getFeedService (onestop_id):
 
 	reqService = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params)
 	serviceJS = json.loads(reqService.text)
-	
+
 	interpretedSchedule = []
 
 	for element in serviceJS['feed_version_infos']:
 		schedule = interpretSchedule(element)
-		
+
 		if schedule:
 			interpretedSchedule.append(schedule)
 
@@ -234,10 +234,10 @@ def getFeedService (onestop_id):
 	print overlapAverage
 	print gapAverage
 
-	 
-# call function with onestop_id as parameter 
-def main(): 
-	onestop_id = sys.argv[1] 
+
+# call function with onestop_id as parameter
+def main():
+	onestop_id = sys.argv[1]
 	# getFeedVersions(onestop_id)
 	getFeedService(onestop_id)
 
