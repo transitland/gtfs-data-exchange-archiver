@@ -112,7 +112,6 @@ def writeToCSV (status):
 			writer.writerow(elem)
 
 
-	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
 
 # find overlaps and gaps in feed versions 
 def findOverlap (interpretedSchedule): 
