@@ -107,7 +107,7 @@ def writeToCSV (status):
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
 	with open('test.csv', 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
-		writer.writeheader() 
+		writer.writeheader()
 		for elem in status:
 			writer.writerow(elem)
 
@@ -217,6 +217,7 @@ def getFeedService (onestop_id):
 	params = (
 	    ('feed_onestop_id', onestop_id),
 	    ('type', 'FeedVersionInfoStatistics'),
+		('per_page', 'false')
 	)
 
 	reqService = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params)
