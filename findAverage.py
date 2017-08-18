@@ -10,10 +10,6 @@ def findAverageType(listOfDates, qualifier, value, sha1):
 	count = 0 
 	sumHours = 0
 
-	# use this to debug any given feed 
-	debug = '3f8e768f71d4de93cb0fce130e52bca3efbc4601' == sha1
-	if debug:
-		print sha1
 
 	for date in listOfDates:
 		meetsCriteria = int(date[0].month)
@@ -30,7 +26,7 @@ def findAverageType(listOfDates, qualifier, value, sha1):
 	if count == 0:
 		return count
 
-	return sumHours/count
+	return float(sumHours)/count
 
 # will return an array representing days of week, sha1
 def findAverageDaysOfWeek(listOfDates, sha1): 
@@ -49,17 +45,17 @@ def findAverageMonth(listOfDates, sha1):
 
 	return monthArray 
 
-def convertToDateList(search_text, startDate, sha1): 
-	operation_hours_per_day = re.findall("([0-9]{4}-[0-9]{2}-[0-9]{2})\":([0-9]+)", search_text)
-	
+def convertToDateList(searchJSON, startDate, sha1): 
+	scheduledService = searchJSON['data']['scheduled_service']
+
 	# retrieve: 2 properties. 
 	listOfDates = []
-	for date in operation_hours_per_day: 
-		official_date = datetime.datetime.strptime(str(date[0]), '%Y-%m-%d')
-		listOfDates.append((official_date, date[1]))
+	for date in scheduledService: 
+		officialDate = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+		listOfDates.append((officialDate, scheduledService[date]))
 
 	weeklyHours = findAverageDaysOfWeek(listOfDates, sha1)
-	monthlyHours = findAverageMonth(listOfDates, 'blah')
+	monthlyHours = findAverageMonth(listOfDates, 'month')
 
 	row = [startDate] + weeklyHours + monthlyHours
 
@@ -72,17 +68,13 @@ def getScheduledService(sha1, onestop_id, averageFileWriter):
 	)
 
 	r = requests.get('http://transit.land/api/v1/feed_version_infos/', params=params)
+	rJSON = json.loads(r.text)
 
-	# retrieve start date 
-	start_date = re.findall("\"startDate\":\"([0-9]{4}-[0-9]{2}-[0-9]{2})", r.text)
-	if not start_date:
-		print "No Start Date!", sha1
-	# retrieving the scheduled service
-	start_position = r.text.find('scheduled_service')
-
-	# create search text 
-	truncated_search_text = r.text[start_position:len(r.text)]
-	return convertToDateList(truncated_search_text, start_date[0], sha1)
+	sortJSON = sorted(rJSON['feed_version_infos'], key = lambda x: x['type'], reverse=False)
+	
+	startDate = sortJSON[0]['data']['feedStatistics']['startDate']
+	
+	return convertToDateList(sortJSON[1], startDate, sha1)
 
 # optional, only saves arrays with changes
 def cleanArray(array):
@@ -107,9 +99,7 @@ def makeRequest(onestop_id):
 	)
 
 	r = requests.get('https://transit.land/api/v1/feed_versions', params=params)
-
-	regex_groups = re.findall("{\"sha1\":\"([0-9A-Za-z]+)\"", r.text)
-	
+	rJSON = json.loads(r.text)
 	
 	averageFileName = "Avgs2-"+onestop_id+".csv"
 	averageFileWriter = csv.writer(open(averageFileName, "w"))
@@ -119,8 +109,9 @@ def makeRequest(onestop_id):
 	averageFileWriter.writerow(first_row + months)
 	array = []
 	
-	for sha1 in regex_groups:
-		array.append(getScheduledService(sha1, onestop_id, averageFileWriter))
+	for element in rJSON['feed_versions']:
+		array.append(getScheduledService(element['sha1'], onestop_id, averageFileWriter))
+
 
 	array = sorted(array, key = lambda x: x[0], reverse=False)
 	
