@@ -104,7 +104,7 @@ def writeToCSV (status):
 
 	csvDocument = csv.writer(open('test.csv', "w"))
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
-	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference']
+	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
 	with open('test.csv', 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
 		writer.writeheader() 
@@ -153,7 +153,8 @@ def findOverlap (interpretedSchedule):
 				"overlapDifference": difference,
 				"gapStart": '',
 				"gapEnd": '',
-				"gapDifference":''
+				"gapDifference":'',
+				"startDifference": next['updatedStart'] - current['updatedStart']
 			}
 
 			status.append(overlapObject)
@@ -179,7 +180,8 @@ def findOverlap (interpretedSchedule):
 				"gapDifference": difference,
 				'overlapStart': '',
 				'overlapEnd': '',
-				'overlapDifference': ''
+				'overlapDifference': '',
+				"startDifference": next['updatedStart'] - current['updatedStart']
 			}
 
 			status.append(gapObject)
