@@ -51,7 +51,7 @@ def convertToDateTime(scheduled_service):
 
 	updatedScheduledService = {}
 	for date in scheduled_service:
-		officialDate = official_date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+		official_date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
 		updatedScheduledService[official_date] = scheduled_service[date]
 		
 	return updatedScheduledService
@@ -64,7 +64,7 @@ def findAverageServiceHours(updatedScheduledService):
 	for date in updatedScheduledService:
 		averageHours = averageHours + updatedScheduledService[date]
 
-	return averageHours/dateCount
+	return float(averageHours)/dateCount
 
 # find and interpret schedule by 
 # determining correct start and end dates
@@ -79,8 +79,8 @@ def interpretSchedule(element):
 		averageServiceHours = findAverageServiceHours(updatedScheduledService)
 		updatedStart, updatedEnd = findStartAndEndDates(updatedScheduledService)
 		
-		updatedStart = cleanTails(updatedScheduledService, 1 == 2)
-		updatedEnd = cleanTails(updatedScheduledService, 1 == 1)
+		updatedStart = cleanTails(updatedScheduledService, False)
+		updatedEnd = cleanTails(updatedScheduledService, True)
 
 		if (sha1, id, updatedStart, updatedEnd):
 			return (sha1, id, updatedStart, updatedEnd)
@@ -105,18 +105,17 @@ def findOverlap (interpretedSchedule):
 		start = next[2]
 		end = current[3] 
 
-		difference = str(end - start)
-		groups = re.findall('([0-9]+) days,', difference)
+		difference = (end - start).days
 
 		if currentIndex == nextIndex: 
 			nextIndex = nextIndex + 1
 
 		elif end > start:
+
 			status.append("Overlap: " + difference + " " + str(start) + " and " + str(end))
 
-			if groups:
-				overlapValues[0] += int(groups[0])
-				overlapValues[1] += 1
+			overlapValues[0] += difference
+			overlapValues[1] += 1
 
 			nextIndex = nextIndex + 1
 
@@ -164,6 +163,7 @@ def getFeedService (onestop_id):
 			interpretedSchedule.append(schedule)
 
 	overlapAverage, gapAverage = findOverlap(interpretedSchedule)
+
 	print overlapAverage
 	print gapAverage
 

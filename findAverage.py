@@ -4,6 +4,7 @@ import datetime
 import requests
 import re
 import csv
+import json
 
 def findAverageType(listOfDates, qualifier, value, sha1):
 	count = 0 
