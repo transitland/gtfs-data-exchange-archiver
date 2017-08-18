@@ -103,19 +103,13 @@ def interpretSchedule(element):
 def writeToCSV (status): 
 
 	csvDocument = csv.writer(open('test.csv', "w"))
-	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart', 
+	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference']
-
-	csvDocument.writerow(headerRow)
-
-	for elem in status: 
-		arrayWrite = [elem[headerRow[0]], elem[headerRow[1]], elem[headerRow[2]], elem[headerRow[3]], elem[headerRow[4]],
-		elem[headerRow[5]], elem[headerRow[6]], elem[headerRow[7]], elem[headerRow[8]], elem[headerRow[9]],
-		elem[headerRow[10]], elem[headerRow[11]], elem[headerRow[12]]]
-		
-		csvDocument.writerow(arrayWrite)
-
-		print arrayWrite
+	with open('test.csv', 'w') as f:
+		writer = csv.DictWriter(f, fieldnames=headerRow)
+		writer.writeheader()
+		for elem in status:
+			writer.writerow(elem)
 
 
 
