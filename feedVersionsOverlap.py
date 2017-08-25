@@ -102,13 +102,14 @@ def interpretSchedule(element):
 
 def writeToCSV (status):
 
-	csvDocument = csv.writer(open('test.csv', "w"))
+	csvDocument = csv.writer(open('test3.csv', "w"))
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
 	with open('test.csv', 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
 		writer.writeheader() 
 		for elem in status:
+			print elem
 			writer.writerow(elem)
 
 
@@ -127,6 +128,8 @@ def findOverlap (interpretedSchedule):
 	# while True:
 	# 	current = interpretedSchedule[currentIndex]
 	# 	next = interpretedSchedule[nextIndex]
+	#
+	
 	for current,next in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
 		start = next['updatedStart']
 		end = current['updatedEnd']
@@ -165,7 +168,6 @@ def findOverlap (interpretedSchedule):
 			nextIndex = nextIndex + 1
 
 		elif start > end:
-			# status.append("Gap: " + str(difference) + " " + str(start) + " and " + str(end))
 
 			gapObject = {
 				"ID": current['ID'],
@@ -198,8 +200,6 @@ def findOverlap (interpretedSchedule):
 		if currentIndex >= len(interpretedSchedule) - 1:
 			pass # break
 
-	# for elem in status:
-	# 	print elem
 	writeToCSV(status)
 
 	overlapAverage = 0
