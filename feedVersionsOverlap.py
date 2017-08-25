@@ -100,12 +100,15 @@ def interpretSchedule(element):
 		if (sha1, id, updatedStart, updatedEnd):
 			return rowInfo
 
-def writeToCSV (status):
+def writeToCSV (status, onestop_id):
 
-	csvDocument = csv.writer(open('test3.csv', "w"))
+	fileName = "overlap-"+ onestop_id + ".csv"
+
+	# csvDocument = csv.writer(open('testFile.csv', "w"))
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
-	with open('test.csv', 'w') as f:
+	
+	with open(fileName, 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
 		writer.writeheader() 
 		for elem in status:
@@ -114,7 +117,7 @@ def writeToCSV (status):
 
 
 # find overlaps and gaps in feed versions
-def findOverlap (interpretedSchedule):
+def findOverlap (interpretedSchedule, onestop_id):
 
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
 
@@ -200,7 +203,7 @@ def findOverlap (interpretedSchedule):
 		if currentIndex >= len(interpretedSchedule) - 1:
 			pass # break
 
-	writeToCSV(status)
+	writeToCSV(status, onestop_id)
 
 	overlapAverage = 0
 	gapAverage = 0
@@ -230,7 +233,7 @@ def getFeedService (onestop_id):
 		if schedule:
 			interpretedSchedule.append(schedule)
 
-	overlapAverage, gapAverage = findOverlap(interpretedSchedule)
+	overlapAverage, gapAverage = findOverlap(interpretedSchedule, onestop_id)
 
 	print overlapAverage
 	print gapAverage
