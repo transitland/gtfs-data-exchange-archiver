@@ -100,24 +100,19 @@ def interpretSchedule(element):
 		if (sha1, id, updatedStart, updatedEnd):
 			return rowInfo
 
-def writeToCSV (status, onestop_id):
+def writeToCSV (filename, status):
 
-	fileName = "overlap-"+ onestop_id + ".csv"
-
-	# csvDocument = csv.writer(open('testFile.csv', "w"))
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
-	
-	with open(fileName, 'w') as f:
+	with open(filename, 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
-		writer.writeheader() 
+		writer.writeheader()
 		for elem in status:
-			print elem
 			writer.writerow(elem)
 
 
 # find overlaps and gaps in feed versions
-def findOverlap (interpretedSchedule, onestop_id):
+def findOverlap (interpretedSchedule):
 
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
 
@@ -131,8 +126,6 @@ def findOverlap (interpretedSchedule, onestop_id):
 	# while True:
 	# 	current = interpretedSchedule[currentIndex]
 	# 	next = interpretedSchedule[nextIndex]
-	#
-	
 	for current,next in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
 		start = next['updatedStart']
 		end = current['updatedEnd']
@@ -160,7 +153,7 @@ def findOverlap (interpretedSchedule, onestop_id):
 				"gapStart": '',
 				"gapEnd": '',
 				"gapDifference":'',
-				"startDifference": next['updatedStart'] - current['updatedStart']
+				"startDifference": (next['updatedStart'] - current['updatedStart']).days
 			}
 
 			status.append(overlapObject)
@@ -171,6 +164,7 @@ def findOverlap (interpretedSchedule, onestop_id):
 			nextIndex = nextIndex + 1
 
 		elif start > end:
+			# status.append("Gap: " + str(difference) + " " + str(start) + " and " + str(end))
 
 			gapObject = {
 				"ID": current['ID'],
@@ -186,7 +180,7 @@ def findOverlap (interpretedSchedule, onestop_id):
 				'overlapStart': '',
 				'overlapEnd': '',
 				'overlapDifference': '',
-				"startDifference": next['updatedStart'] - current['updatedStart']
+				"startDifference": (next['updatedStart'] - current['updatedStart']).days
 			}
 
 			status.append(gapObject)
@@ -203,23 +197,23 @@ def findOverlap (interpretedSchedule, onestop_id):
 		if currentIndex >= len(interpretedSchedule) - 1:
 			pass # break
 
-	writeToCSV(status, onestop_id)
-
 	overlapAverage = 0
 	gapAverage = 0
+	startDifferenceAverage = sum(i['startDifference'] for i in status) / float(len(status)-1)
 
 	if overlapValues[1]:
 		overlapAverage = overlapValues[0]/overlapValues[1]
 	if gapValues[1]:
 		gapAverage = float(gapValues[0])/gapValues[1]
 
-	return overlapAverage, gapAverage
+	return status, overlapAverage, gapAverage, startDifferenceAverage
 
 # get feedversion with scheduled stops, and find overlap and gap averages for each feed
 def getFeedService (onestop_id):
 	params = (
 	    ('feed_onestop_id', onestop_id),
 	    ('type', 'FeedVersionInfoStatistics'),
+		('per_page', 'false')
 	)
 
 	reqService = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params)
@@ -233,17 +227,22 @@ def getFeedService (onestop_id):
 		if schedule:
 			interpretedSchedule.append(schedule)
 
-	overlapAverage, gapAverage = findOverlap(interpretedSchedule, onestop_id)
-
+	status, overlapAverage, gapAverage, startDifferenceAverage = findOverlap(interpretedSchedule)
+	writeToCSV("%s.csv"%onestop_id, status)
+	with open('%s.json'%onestop_id, 'w') as f:
+		f.write(json.dumps(status, default=lambda x:str(x)))
 	print overlapAverage
 	print gapAverage
+	print startDifferenceAverage
 
 
 # call function with onestop_id as parameter
 def main():
 	onestop_id = sys.argv[1]
-	# getFeedVersions(onestop_id)
-	getFeedService(onestop_id)
+	feeds = requests.get('https://transit.land/api/v1/feeds', params={'per_page': 10}).json()['feeds']
+	for feed in feeds:
+		print feed['onestop_id']
+		getFeedService(feed['onestop_id'])
 
 if __name__ == "__main__":
     main()
