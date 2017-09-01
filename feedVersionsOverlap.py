@@ -1,3 +1,4 @@
+import time
 import sys
 import requests
 import json
@@ -253,6 +254,7 @@ def getFeedService (onestop_id):
 		('apikey', APIKEY)
 	)
 
+	time.sleep(0.125)
 	feedVersionInfos = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params).json()['feed_version_infos']
 
 	interpretedSchedule = []
@@ -260,6 +262,8 @@ def getFeedService (onestop_id):
 		sha1 = feedVersionInfo['feed_version_sha1']
 		print "sha1: ", sha1
 		params = {'apikey': APIKEY}
+
+		time.sleep(0.125)
 		feedVersion = requests.get('https://transit.land/api/v1/feed_versions/%s'%sha1, params=params).json()
 		if feedVersion is None:
 			print "no feed_version"
@@ -310,6 +314,8 @@ def getFeedService (onestop_id):
 # call function with onestop_id as parameter
 def main():
 	params = {'per_page': 10, 'bbox': '-123.321533,36.826875,-120.786438,38.629745', 'apikey': APIKEY}
+
+	time.sleep(0.125)
 	feeds = requests.get('https://transit.land/api/v1/feeds', params=params).json()['feeds']
 	allFeedsInformation = []
 	for feed in feeds:
