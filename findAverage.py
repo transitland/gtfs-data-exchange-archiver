@@ -6,21 +6,23 @@ import re
 import csv
 import json
 
+## threshold for detecting a tail
+THRESHOLD = 0.15
+
 def findAverageType(listOfDates, qualifier, value, sha1):
 	count = 0 
 	sumHours = 0
 
-
-	for date in listOfDates:
-		meetsCriteria = int(date[0].month)
+	for date in listOfDates.keys():
+		meetsCriteria = int(date.month)
 
 		if qualifier == 'week':
-			meetsCriteria = date[0].weekday()
+			meetsCriteria = date.weekday()
 
 
 		if meetsCriteria == value:
 			count = count + 1
-			sumHours = sumHours + int(date[1])
+			sumHours = sumHours + int(listOfDates[date])
 
 	if count == 0:
 		return count
@@ -44,43 +46,99 @@ def findAverageMonth(listOfDates, sha1):
 
 	return monthArray 
 
-def convertToDateList(searchJSON, startDate, sha1): 
-	scheduledService = searchJSON['data']['scheduled_service']
+# remove tail end
+def cleanTails(updatedScheduledService, end):
+	# TODO: Swap out names here ... to updatedScheduledService
+	listOfDates = updatedScheduledService
 
-	# retrieve: 2 properties. 
-	listOfDates = []
-	for date in scheduledService: 
-		officialDate = datetime.datetime.strptime(str(date), '%Y-%m-%d')
-		listOfDates.append((officialDate, scheduledService[date]))
+	averageServiceHours = findAverageServiceHours(updatedScheduledService)
+	listOfDates = sorted(updatedScheduledService.keys())
 
-	weeklyHours = findAverageDaysOfWeek(listOfDates, sha1)
-	monthlyHours = findAverageMonth(listOfDates, 'month')
+	if end:
+		listOfDates.reverse()
 
-	row = [startDate] + weeklyHours + monthlyHours
+	tailDate = listOfDates[0]
+	tailValue = 0
 
-	return row
+	# updatd start may not reflect actual start, could also be end.
+	updatedStart = tailDate
+
+	for i, date in enumerate(listOfDates):
+		tailValue = updatedScheduledService[date]
+		if tailValue < THRESHOLD * averageServiceHours:
+			del listOfDates[i]
+		else:
+			updatedStart = date
+			break
+
+	return updatedStart
+
+# convert an dictionary of strings to a dictionary of datetime objects
+def convertToDateTime(scheduled_service):
+	updatedScheduledService = {}
+	for date in scheduled_service:
+		official_date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+		updatedScheduledService[official_date] = scheduled_service[date]
+
+	return updatedScheduledService
+
+# find average service hours
+def findAverageServiceHours(updatedScheduledService):
+	averageHours = 0
+	dateCount = len(updatedScheduledService)
+
+	for date in updatedScheduledService:
+		averageHours = averageHours + updatedScheduledService[date]
+
+	return float(averageHours)/dateCount
+
+def findStartAndEndDates(updatedScheduledService):
+	startDate = datetime.datetime.max
+	endDate = datetime.datetime.min
+
+	for date in updatedScheduledService:
+		if date > endDate:
+			endDate = date
+		if date < startDate:
+			startDate = date
+
+	return startDate, endDate
+
+def interpretSchedule(scheduled_service, sha1): 
+	updatedScheduledService = convertToDateTime(scheduled_service)
+	averageServiceHours = findAverageServiceHours(updatedScheduledService)
+	start, end = findStartAndEndDates(updatedScheduledService)
+
+	updatedStart = cleanTails(updatedScheduledService, False)
+	updatedEnd = cleanTails(updatedScheduledService, True)
+
+	weeklyHours = findAverageDaysOfWeek(updatedScheduledService, sha1)
+	monthlyHours = findAverageMonth(updatedScheduledService, sha1)
+
+	row = [updatedStart] + weeklyHours + monthlyHours
+
+	return row 
+
+
+
+# searches through a JSON element, and returns the item in the dictionary that matches this.
+def retrieveElementInList (searchKey, searchValue, searchList): 
+	for dictionary in searchList: 
+		if dictionary[searchKey] == searchValue:
+			return dictionary
 
 def getScheduledService(sha1, onestop_id, averageFileWriter): 
 	# making request here 
 	params = (
 	    ('feed_version_sha1', sha1),
 	)
-	print sha1
 
 	r = requests.get('http://transit.land/api/v1/feed_version_infos/', params=params)
 	rJSON = json.loads(r.text)
 
-	sortJSON = sorted(rJSON['feed_version_infos'], key = lambda x: x['type'], reverse=False)
-	
-	print sortJSON[0]['data']
-	if (sortJSON[0] and sortJSON[0]['data'] and sortJSON[0]['data']['feedStatistics']):
-		startDate = sortJSON[0]['data']['feedStatistics']['startDate']
+	sortJSON = retrieveElementInList('type', 'FeedVersionInfoStatistics', rJSON['feed_version_infos'])
 
-	else:
-		print "Unsuccessful."
-		print sortJSON[0]['data']
-
-	return convertToDateList(sortJSON[1], startDate, sha1)
+	return interpretSchedule(sortJSON['data']['scheduled_service'], sha1)
 
 	
 
@@ -109,23 +167,22 @@ def makeRequest(onestop_id):
 	r = requests.get('https://transit.land/api/v1/feed_versions', params=params)
 	rJSON = json.loads(r.text)
 	
-	averageFileName = "Avgs3-"+onestop_id+".csv"
+	averageFileName = "Avgs4-"+onestop_id+".csv"
 	averageFileWriter = csv.writer(open(averageFileName, "w"))
 	
 	first_row = ['sha1', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 	averageFileWriter.writerow(first_row + months)
 	array = []
-	
-	print "Testing here for RJSON"
-	print rJSON['feed_versions']
+
 	for element in rJSON['feed_versions']:
+		print element['sha1']
 		array.append(getScheduledService(element['sha1'], onestop_id, averageFileWriter))
 
 
 	array = sorted(array, key = lambda x: x[0], reverse=False)
 	
-	# array = cleanArray(array)
+	array = cleanArray(array)
 	for row in array: 
 		averageFileWriter.writerow(row)
 

@@ -84,9 +84,6 @@ def interpretSchedule(element):
 		updatedStart = cleanTails(updatedScheduledService, False)
 		updatedEnd = cleanTails(updatedScheduledService, True)
 
-		# if (updatedStart == start and updatedEnd == end):
-		# 	updatedStart = None
-		# 	updatedEnd = None
 
 		rowInfo = {
 			"ID": identification,
@@ -242,7 +239,6 @@ def getFeedService (onestop_id):
 	print overlapAverage
 	print gapAverage
 	print startDifferenceAverage
-
 	return averageOneStopInformation
 
 
