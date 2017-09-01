@@ -69,7 +69,7 @@ def findAverageServiceHours(updatedScheduledService):
 # find and interpret schedule by
 # determining correct start and end dates
 # converting to datetime objects
-def interpretSchedule(element):
+def interpretSchedule(feedVersion, element):
 	if 'data' in element and not 'error' in element['data']:
 		sha1 = element['feed_version_sha1']
 		identification = element['id']
@@ -83,6 +83,10 @@ def interpretSchedule(element):
 		updatedStart = cleanTails(updatedScheduledService, False)
 		updatedEnd = cleanTails(updatedScheduledService, True)
 
+		fetchedAt = toDateTime(feedVersion['fetched_at'][:10])
+		if (fetchedAt - updatedStart).days > 7:
+			print "\tset updatedStart %s to fetchedAt %s"%(updatedStart, fetchedAt)
+			updatedStart = fetchedAt
 
 		rowInfo = {
 			"ID": identification,
@@ -91,6 +95,7 @@ def interpretSchedule(element):
 			"originalEnd": end,
 			"updatedStart": updatedStart,
 			"updatedEnd": updatedEnd,
+			"fetchedAt": fetchedAt
 		}
 
 		if (sha1, id, updatedStart, updatedEnd):
