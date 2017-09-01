@@ -113,9 +113,9 @@ def interpretSchedule(scheduled_service, sha1):
 	updatedEnd = cleanTails(updatedScheduledService, True)
 
 	weeklyHours = findAverageDaysOfWeek(updatedScheduledService, sha1)
-	monthlyHours = findAverageMonth(updatedScheduledService, sha1)
+	# monthlyHours = findAverageMonth(updatedScheduledService, sha1)
 
-	row = [updatedStart] + weeklyHours + monthlyHours
+	row = [updatedEnd.date()]  + [updatedStart.date()] + weeklyHours
 
 	return row 
 
@@ -127,6 +127,9 @@ def retrieveElementInList (searchKey, searchValue, searchList):
 		if dictionary[searchKey] == searchValue:
 			return dictionary
 
+	return None
+
+# get the scheduled service of a specific feed version 
 def getScheduledService(sha1, onestop_id, averageFileWriter): 
 	# making request here 
 	params = (
@@ -138,11 +141,14 @@ def getScheduledService(sha1, onestop_id, averageFileWriter):
 
 	sortJSON = retrieveElementInList('type', 'FeedVersionInfoStatistics', rJSON['feed_version_infos'])
 
-	return interpretSchedule(sortJSON['data']['scheduled_service'], sha1)
+	if sortJSON['data'].get('error'):
+		print sortJSON['data'].get('error')
+	else: 
+		return interpretSchedule(sortJSON['data']['scheduled_service'], sha1)
 
 	
 
-# optional, only saves arrays with changes
+# optional, only saves array rows with changes because some data is the exact same information. 
 def cleanArray(array):
 	prevRow = array[1]
 	newArray = []
@@ -158,7 +164,9 @@ def cleanArray(array):
 			continue
 
 	return newArray
-		
+	
+# make request to retrieve all sha1s for each feed version for a onestop_id 
+# opens up CSV document to write all this information
 def makeRequest(onestop_id): 
 	params = (
     	('feed_onestop_id', onestop_id),
@@ -167,22 +175,26 @@ def makeRequest(onestop_id):
 	r = requests.get('https://transit.land/api/v1/feed_versions', params=params)
 	rJSON = json.loads(r.text)
 	
-	averageFileName = "Avgs4-"+onestop_id+".csv"
+	averageFileName = "Avgs-"+onestop_id+".csv"
 	averageFileWriter = csv.writer(open(averageFileName, "w"))
 	
-	first_row = ['sha1', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+	# start date is put second so you can easily make CSV graphs
+	first_row = ['End Date', 'Start Date', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 	months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-	averageFileWriter.writerow(first_row + months)
+
+	averageFileWriter.writerow(first_row)
 	array = []
 
 	for element in rJSON['feed_versions']:
 		print element['sha1']
-		array.append(getScheduledService(element['sha1'], onestop_id, averageFileWriter))
+		appendedElement = getScheduledService(element['sha1'], onestop_id, averageFileWriter)
+		if appendedElement:
+			array.append(appendedElement)
 
 
-	array = sorted(array, key = lambda x: x[0], reverse=False)
-	
+	array = sorted(array, key = lambda x: (x[1], x[0]), reverse=False)
 	array = cleanArray(array)
+
 	for row in array: 
 		averageFileWriter.writerow(row)
 
