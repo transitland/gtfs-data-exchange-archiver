@@ -74,7 +74,7 @@ def findAverageServiceHours(updatedScheduledService):
 def interpretSchedule(feedVersion, element):
 	if 'data' in element and not 'error' in element['data']:
 		sha1 = element['feed_version_sha1']
-		identification = element['id']
+		print "interpret:", sha1
 
 		scheduled_service = element['data']['scheduled_service']
 
@@ -85,13 +85,25 @@ def interpretSchedule(feedVersion, element):
 		updatedStart = cleanTails(updatedScheduledService, False)
 		updatedEnd = cleanTails(updatedScheduledService, True)
 
+		if not feedVersion.get('fetched_at'):
+			print "\tno fetched_at, skipping"
+			return
 		fetchedAt = toDateTime(feedVersion['fetched_at'][:10])
 		if (fetchedAt - updatedStart).days > 30:
 			print "\tset updatedStart %s to fetchedAt %s"%(updatedStart, fetchedAt)
 			updatedStart = fetchedAt
 
+		print "\tfetchedAt:", fetchedAt
+		print "\toriginalStart:", start
+		print "\tupdatedStart:", updatedStart
+		print "\tstart shift:", (updatedStart - start).days
+		print "\toriginalEnd:", end
+		print "\tupdatedEnd:", updatedEnd
+		print "\tend shift:", (updatedEnd - end).days
+		print "\toriginal duration:", (end - start).days
+		print "\tupdated duration:", (updatedEnd - updatedStart).days
+
 		rowInfo = {
-			"ID": identification,
 			"currentSha1": sha1,
 			"originalStart": start,
 			"originalEnd": end,
@@ -100,7 +112,7 @@ def interpretSchedule(feedVersion, element):
 			"fetchedAt": fetchedAt
 		}
 
-		if (sha1, id, updatedStart, updatedEnd):
+		if (sha1, updatedStart, updatedEnd):
 			return rowInfo
 
 
@@ -120,15 +132,18 @@ def findOverlap2(interpretedSchedule):
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['fetchedAt']))
 	status = []
 	for current,next_ in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
-		print "\n\n"
-		print "current:"
+		print "compare %s -> %s"%(current['currentSha1'], next_['currentSha1'])
+		print "\tcurrent:"
 		print current
-		print "next:"
+		print "\tnext:"
 		print next_
 
 		overlapDays = (current['updatedEnd'] - next_['updatedStart']).days
 		totalTime = (next_['updatedEnd'] - current['updatedStart']).days
 		overlapPercent = float(overlapDays) / float(totalTime)
+		print "\toverlapDays:", overlapDays
+		print "\ttotalTime:", totalTime
+		print "\toverlapPercent:", overlapPercent
 
 		overlapObject = {
 			"currentSha1": current['currentSha1'],
@@ -142,8 +157,6 @@ def findOverlap2(interpretedSchedule):
 			"fetchedDifference": (next_['fetchedAt'] - current['fetchedAt']).days,
 			"overlapPercent": overlapPercent,
 		}
-		print "overlapObject:"
-		print overlapObject
 		status.append(overlapObject)
 
 	return status
@@ -176,7 +189,6 @@ def findOverlap (interpretedSchedule):
 			# status.append("Overlap: " + str(difference) + " " + str(start) + " and " + str(end))
 
 			overlapObject = {
-				"ID": current['ID'],
 				"currentSha1": current['currentSha1'],
 				"nextSha1": next['currentSha1'],
 				"originalStart": current['originalStart'].strftime('%Y-%m-%d'),
@@ -203,7 +215,6 @@ def findOverlap (interpretedSchedule):
 			# status.append("Gap: " + str(difference) + " " + str(start) + " and " + str(end))
 
 			gapObject = {
-				"ID": current['ID'],
 				"currentSha1": current['currentSha1'],
 				"nextSha1": next['currentSha1'],
 				"originalStart": current['originalStart'].strftime('%Y-%m-%d'),
@@ -245,7 +256,7 @@ def findOverlap (interpretedSchedule):
 	return status, overlapAverage, gapAverage, startDifferenceAverage
 
 # get feedversion with scheduled stops, and find overlap and gap averages for each feed
-def getFeedService (onestop_id):
+def getFeedVersions (onestop_id):
 	print "===== %s ====="%(onestop_id)
 	params = (
 	    ('feed_onestop_id', onestop_id),
@@ -257,31 +268,43 @@ def getFeedService (onestop_id):
 	time.sleep(0.125)
 	feedVersionInfos = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params).json()['feed_version_infos']
 
-	interpretedSchedule = []
+	data = []
 	for feedVersionInfo in feedVersionInfos:
 		sha1 = feedVersionInfo['feed_version_sha1']
-		print "sha1: ", sha1
+		print "sha1:", sha1
 		params = {'apikey': APIKEY}
 
 		time.sleep(0.125)
 		feedVersion = requests.get('https://transit.land/api/v1/feed_versions/%s'%sha1, params=params).json()
 		if feedVersion is None:
-			print "no feed_version"
+			print "\tno feed_version"
 			continue
 		if feedVersionInfo is None:
-			print "no feed_version_info"
+			print "\tno feed_version_info"
 			continue
 		if feedVersion.get('tags') and feedVersion['tags'].get('gtfs_data_exchange'):
-			print "gtfs_data_exchange feed; skipping"
+			print "\tgtfs_data_exchange feed; skipping"
 			continue
+		data.append([feedVersion, feedVersionInfo])
+
+	return data
+
+def processFeed(onestop_id):
+	# Get feed_versions and feed_version_infos
+	fvs = getFeedVersions(onestop_id)
+
+	# Interpret and adjust the schedules
+	interpretedSchedules = []
+	for feedVersion, feedVersionInfo in fvs:
 		schedule = interpretSchedule(feedVersion, feedVersionInfo)
 		if schedule:
-			interpretedSchedule.append(schedule)
+			interpretedSchedules.append(schedule)
 		else:
-			print "error processing schedule"
+			print "\terror processing schedule; skipping"
 			continue
 
-	overlaps = findOverlap2(interpretedSchedule)
+	# Calculate overlap statistics
+	overlaps = findOverlap2(interpretedSchedules)
 	overlapPercentAverage = sum(i['overlapPercent'] for i in overlaps) / float(len(overlaps))
 	fetchedAtDifferenceAverage = sum(i['fetchedDifference'] for i in overlaps) / float(len(overlaps))
 
@@ -290,7 +313,6 @@ def getFeedService (onestop_id):
 		'overlapPercentAverage': overlapPercentAverage,
 		'fetchedAtDifferenceAverage': fetchedAtDifferenceAverage
 	}
-
 	# status, overlapAverage, gapAverage, startDifferenceAverage = findOverlap(interpretedSchedule)
 	#
 	# header = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
@@ -311,16 +333,19 @@ def getFeedService (onestop_id):
 	# print startDifferenceAverage
 	# return averageOneStopInformation
 
+
 # call function with onestop_id as parameter
 def main():
-	params = {'per_page': 10, 'bbox': '-123.321533,36.826875,-120.786438,38.629745', 'apikey': APIKEY}
-
+	params = {
+		'per_page': 1,
+		'bbox': '-123.321533,36.826875,-120.786438,38.629745',
+		'apikey': APIKEY
+	}
 	time.sleep(0.125)
 	feeds = requests.get('https://transit.land/api/v1/feeds', params=params).json()['feeds']
 	allFeedsInformation = []
 	for feed in feeds:
-		print feed['onestop_id']
-		allFeedsInformation.append(getFeedService(feed['onestop_id']))
+		allFeedsInformation.append(processFeed(feed['onestop_id']))
 	filename = 'allFeeds4.csv'
 	writeToCSV(filename, allFeedsInformation)
 
