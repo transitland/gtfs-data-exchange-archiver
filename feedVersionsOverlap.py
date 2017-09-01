@@ -115,6 +115,38 @@ def writeToCSV (filename, status, header=None):
 
 
 # find overlaps and gaps in feed versions
+def findOverlap2(interpretedSchedule):
+	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['fetchedAt']))
+	status = []
+	for current,next_ in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
+		print "\n\n"
+		print "current:"
+		print current
+		print "next:"
+		print next_
+
+		overlapDays = (current['updatedEnd'] - next_['updatedStart']).days
+		totalTime = (next_['updatedEnd'] - current['updatedStart']).days
+		overlapPercent = float(overlapDays) / float(totalTime)
+
+		overlapObject = {
+			"currentSha1": current['currentSha1'],
+			"nextSha1": next_['currentSha1'],
+			"originalStart": current['originalStart'].strftime('%Y-%m-%d'),
+			"originalEnd": current['originalEnd'].strftime('%Y-%m-%d'),
+			"updatedStart": current['updatedStart'].strftime('%Y-%m-%d'),
+			"updatedEnd": current['updatedEnd'].strftime('%Y-%m-%d'),
+			"overlap": overlapDays,
+			"startDifference": (next_['updatedStart'] - current['updatedStart']).days,
+			"fetchedDifference": (next_['fetchedAt'] - current['fetchedAt']).days,
+			"overlapPercent": overlapPercent,
+		}
+		print "overlapObject:"
+		print overlapObject
+		status.append(overlapObject)
+
+	return status
+
 def findOverlap (interpretedSchedule):
 
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
