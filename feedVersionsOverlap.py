@@ -306,8 +306,8 @@ def getFeedService (onestop_id):
 
 # call function with onestop_id as parameter
 def main():
-	per_page = int(sys.argv[1])
-	feeds = requests.get('https://transit.land/api/v1/feeds', params={'per_page': per_page}).json()['feeds']
+	params = {'per_page': 10, 'bbox': '-123.321533,36.826875,-120.786438,38.629745'}
+	feeds = requests.get('https://transit.land/api/v1/feeds', params=params).json()['feeds']
 	allFeedsInformation = []
 	for feed in feeds:
 		print feed['onestop_id']
