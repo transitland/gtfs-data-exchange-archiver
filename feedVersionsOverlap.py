@@ -101,14 +101,14 @@ def interpretSchedule(feedVersion, element):
 		if (sha1, id, updatedStart, updatedEnd):
 			return rowInfo
 
-def writeToCSV (filename, status):
 
-	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
-	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
 def toDateTime(value):
 	return datetime.datetime.strptime(str(value), '%Y-%m-%d')
+
+def writeToCSV (filename, status, header=None):
+	header = header or status[0].keys()
 	with open(filename, 'w') as f:
-		writer = csv.DictWriter(f, fieldnames=headerRow)
+		writer = csv.DictWriter(f, fieldnames=header)
 		writer.writeheader()
 		for elem in status:
 			writer.writerow(elem)
