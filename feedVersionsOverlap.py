@@ -86,7 +86,7 @@ def interpretSchedule(feedVersion, element):
 		updatedEnd = cleanTails(updatedScheduledService, True)
 
 		fetchedAt = toDateTime(feedVersion['fetched_at'][:10])
-		if (fetchedAt - updatedStart).days > 7:
+		if (fetchedAt - updatedStart).days > 30:
 			print "\tset updatedStart %s to fetchedAt %s"%(updatedStart, fetchedAt)
 			updatedStart = fetchedAt
 
