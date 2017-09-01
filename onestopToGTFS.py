@@ -42,12 +42,13 @@ def searchForMatchName(feed_onestop_id, operatorName, sourceOfFeed, gtfs_page, d
 
 # goes through CSV file, makes 1-2 calls to attempt to find a match in GTFS
 # HTML document.
-def parseFile(gtfs_page, debugger, start_index):
+def parseFile(gtfs_page, debugger, start_index, end_index):
 	SUCCESS_COUNT = 0
 	TOTAL_COUNT = 0
 	SOURCE_COUNT = 0
 	NAME_COUNT = 0
 	currentIndex = 0
+
 	# newCSVFolder = open("NameFirstNewFeeds.csv", "w+")
 	newCSVDocument = csv.writer(open("CSVNewFeedNames.csv", "w"))
 
@@ -85,8 +86,6 @@ def parseFile(gtfs_page, debugger, start_index):
 				if match:
 					row.append(match)
 					newCSVDocument.writerow(row)
-					# newCSVFolder.write(row[0] + "," + row[1] + "," + row[2] + "," + row[3] + 
-					# 	"," + row[4] + "," + row[5] + "," + row[6] + "," + row[7] + "\n")
 					SUCCESS_COUNT = SUCCESS_COUNT + 1 
 
 
@@ -98,14 +97,14 @@ def parseFile(gtfs_page, debugger, start_index):
 def main(): 
 	parse = './' + sys.argv[1]
 	debugger = sys.argv[2] == 'ON'
-	start_index = sys.argv[3] - '0'
-	end_index = sys.argv[4] - '0'
+	start_index = int(sys.argv[3])
+	end_index = int(sys.argv[4])
 	
 	print start_index
 	print end_index
 	# open up gtfs HTML and removes all newlines 
-	# gtfs_page = open(parse, 'r').read().replace('\n', '')
-	# parseFile(gtfs_page, debugger, start_index)
+	gtfs_page = open(parse, 'r').read().replace('\n', '')
+	parseFile(gtfs_page, debugger, 0, 850)
 
 
 if __name__ == "__main__":

@@ -65,15 +65,24 @@ def getScheduledService(sha1, onestop_id, averageFileWriter):
 	params = (
 	    ('feed_version_sha1', sha1),
 	)
+	print sha1
 
 	r = requests.get('http://transit.land/api/v1/feed_version_infos/', params=params)
 	rJSON = json.loads(r.text)
 
 	sortJSON = sorted(rJSON['feed_version_infos'], key = lambda x: x['type'], reverse=False)
 	
-	startDate = sortJSON[0]['data']['feedStatistics']['startDate']
-	
+	print sortJSON[0]['data']
+	if (sortJSON[0] and sortJSON[0]['data'] and sortJSON[0]['data']['feedStatistics']):
+		startDate = sortJSON[0]['data']['feedStatistics']['startDate']
+
+	else:
+		print "Unsuccessful."
+		print sortJSON[0]['data']
+
 	return convertToDateList(sortJSON[1], startDate, sha1)
+
+	
 
 # optional, only saves arrays with changes
 def cleanArray(array):
@@ -100,7 +109,7 @@ def makeRequest(onestop_id):
 	r = requests.get('https://transit.land/api/v1/feed_versions', params=params)
 	rJSON = json.loads(r.text)
 	
-	averageFileName = "Avgs2-"+onestop_id+".csv"
+	averageFileName = "Avgs3-"+onestop_id+".csv"
 	averageFileWriter = csv.writer(open(averageFileName, "w"))
 	
 	first_row = ['sha1', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -108,6 +117,8 @@ def makeRequest(onestop_id):
 	averageFileWriter.writerow(first_row + months)
 	array = []
 	
+	print "Testing here for RJSON"
+	print rJSON['feed_versions']
 	for element in rJSON['feed_versions']:
 		array.append(getScheduledService(element['sha1'], onestop_id, averageFileWriter))
 
@@ -116,7 +127,6 @@ def makeRequest(onestop_id):
 	
 	# array = cleanArray(array)
 	for row in array: 
-		print row
 		averageFileWriter.writerow(row)
 
 def main(): 

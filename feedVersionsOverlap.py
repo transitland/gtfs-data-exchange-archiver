@@ -202,7 +202,7 @@ def findOverlap (interpretedSchedule):
 	startDifferenceAverage = sum(i['startDifference'] for i in status) / float(len(status)-1)
 
 	if overlapValues[1]:
-		overlapAverage = overlapValues[0]/overlapValues[1]
+		overlapAverage = float(overlapValues[0])/overlapValues[1]
 	if gapValues[1]:
 		gapAverage = float(gapValues[0])/gapValues[1]
 
@@ -231,18 +231,42 @@ def getFeedService (onestop_id):
 	writeToCSV("%s.csv"%onestop_id, status)
 	with open('%s.json'%onestop_id, 'w') as f:
 		f.write(json.dumps(status, default=lambda x:str(x)))
+
+	averageOneStopInformation = {
+		'onestop_id': onestop_id,
+		'overlapAverage': overlapAverage,
+		'gapAverage': gapAverage,
+		'startDifferenceAverage': startDifferenceAverage
+	}
+
 	print overlapAverage
 	print gapAverage
 	print startDifferenceAverage
 
+	return averageOneStopInformation
+
+
 
 # call function with onestop_id as parameter
 def main():
-	onestop_id = sys.argv[1]
-	feeds = requests.get('https://transit.land/api/v1/feeds', params={'per_page': 10}).json()['feeds']
+	per_page = int(sys.argv[1])
+	feeds = requests.get('https://transit.land/api/v1/feeds', params={'per_page': per_page}).json()['feeds']
+	allFeedsInformation = []
 	for feed in feeds:
 		print feed['onestop_id']
-		getFeedService(feed['onestop_id'])
+		allFeedsInformation.append(getFeedService(feed['onestop_id']))
+
+	filename = 'allFeeds4.csv'
+	headerRow = ['onestop_id', 'overlapAverage', 'gapAverage', 'startDifferenceAverage']
+
+	with open(filename, 'w') as f:
+		writer = csv.DictWriter(f, fieldnames=headerRow)
+		writer.writeheader()
+		for elem in allFeedsInformation:
+			writer.writerow(elem)
+
+	
+
 
 if __name__ == "__main__":
     main()
