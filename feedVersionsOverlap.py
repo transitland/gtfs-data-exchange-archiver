@@ -7,6 +7,7 @@ import csv
 
 ## threshold for detecting a tail
 THRESHOLD = 0.15
+APIKEY = sys.argv[1]
 
 # remove tail end
 def cleanTails(updatedScheduledService, end):
@@ -248,7 +249,8 @@ def getFeedService (onestop_id):
 	params = (
 	    ('feed_onestop_id', onestop_id),
 	    ('type', 'FeedVersionInfoStatistics'),
-		('per_page', 'false')
+		('per_page', 'false'),
+		('apikey', APIKEY)
 	)
 
 	feedVersionInfos = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params).json()['feed_version_infos']
@@ -257,7 +259,8 @@ def getFeedService (onestop_id):
 	for feedVersionInfo in feedVersionInfos:
 		sha1 = feedVersionInfo['feed_version_sha1']
 		print "sha1: ", sha1
-		feedVersion = requests.get('https://transit.land/api/v1/feed_versions/%s'%sha1).json()
+		params = {'apikey': APIKEY}
+		feedVersion = requests.get('https://transit.land/api/v1/feed_versions/%s'%sha1, params=params).json()
 		if feedVersion is None:
 			print "no feed_version"
 			continue
@@ -306,7 +309,7 @@ def getFeedService (onestop_id):
 
 # call function with onestop_id as parameter
 def main():
-	params = {'per_page': 10, 'bbox': '-123.321533,36.826875,-120.786438,38.629745'}
+	params = {'per_page': 10, 'bbox': '-123.321533,36.826875,-120.786438,38.629745', 'apikey': APIKEY}
 	feeds = requests.get('https://transit.land/api/v1/feeds', params=params).json()['feeds']
 	allFeedsInformation = []
 	for feed in feeds:
