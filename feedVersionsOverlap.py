@@ -251,16 +251,28 @@ def getFeedService (onestop_id):
 		('per_page', 'false')
 	)
 
-	reqService = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params)
-	serviceJS = json.loads(reqService.text)
+	feedVersionInfos = requests.get('https://transit.land/api/v1/feed_version_infos/', params=params).json()['feed_version_infos']
 
 	interpretedSchedule = []
-
-	for element in serviceJS['feed_version_infos']:
-		schedule = interpretSchedule(element)
-
+	for feedVersionInfo in feedVersionInfos:
+		sha1 = feedVersionInfo['feed_version_sha1']
+		print "sha1: ", sha1
+		feedVersion = requests.get('https://transit.land/api/v1/feed_versions/%s'%sha1).json()
+		if feedVersion is None:
+			print "no feed_version"
+			continue
+		if feedVersionInfo is None:
+			print "no feed_version_info"
+			continue
+		if feedVersion.get('tags') and feedVersion['tags'].get('gtfs_data_exchange'):
+			print "gtfs_data_exchange feed; skipping"
+			continue
+		schedule = interpretSchedule(feedVersion, feedVersionInfo)
 		if schedule:
 			interpretedSchedule.append(schedule)
+		else:
+			print "error processing schedule"
+			continue
 
 	status, overlapAverage, gapAverage, startDifferenceAverage = findOverlap(interpretedSchedule)
 	writeToCSV("%s.csv"%onestop_id, status)
