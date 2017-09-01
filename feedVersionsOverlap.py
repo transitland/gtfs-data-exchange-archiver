@@ -312,17 +312,8 @@ def main():
 	for feed in feeds:
 		print feed['onestop_id']
 		allFeedsInformation.append(getFeedService(feed['onestop_id']))
-
 	filename = 'allFeeds4.csv'
-	headerRow = ['onestop_id', 'overlapAverage', 'gapAverage', 'startDifferenceAverage']
-
-	with open(filename, 'w') as f:
-		writer = csv.DictWriter(f, fieldnames=headerRow)
-		writer.writeheader()
-		for elem in allFeedsInformation:
-			writer.writerow(elem)
-
-	
+	writeToCSV(filename, allFeedsInformation)
 
 
 if __name__ == "__main__":
