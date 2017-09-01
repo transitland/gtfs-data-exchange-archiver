@@ -113,7 +113,6 @@ def writeToCSV (filename, status, header=None):
 		for elem in status:
 			writer.writerow(elem)
 
-
 # find overlaps and gaps in feed versions
 def findOverlap2(interpretedSchedule):
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['fetchedAt']))
@@ -149,7 +148,7 @@ def findOverlap2(interpretedSchedule):
 
 def findOverlap (interpretedSchedule):
 
-	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['updatedStart'], x['updatedEnd']))
+	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['fetchedAt']))
 
 	currentIndex = 0
 	nextIndex = 1
@@ -245,6 +244,7 @@ def findOverlap (interpretedSchedule):
 
 # get feedversion with scheduled stops, and find overlap and gap averages for each feed
 def getFeedService (onestop_id):
+	print "===== %s ====="%(onestop_id)
 	params = (
 	    ('feed_onestop_id', onestop_id),
 	    ('type', 'FeedVersionInfoStatistics'),
@@ -274,24 +274,35 @@ def getFeedService (onestop_id):
 			print "error processing schedule"
 			continue
 
-	status, overlapAverage, gapAverage, startDifferenceAverage = findOverlap(interpretedSchedule)
-	writeToCSV("%s.csv"%onestop_id, status)
-	with open('%s.json'%onestop_id, 'w') as f:
-		f.write(json.dumps(status, default=lambda x:str(x)))
+	overlaps = findOverlap2(interpretedSchedule)
+	overlapPercentAverage = sum(i['overlapPercent'] for i in overlaps) / float(len(overlaps))
+	fetchedAtDifferenceAverage = sum(i['fetchedDifference'] for i in overlaps) / float(len(overlaps))
 
-	averageOneStopInformation = {
+	return {
 		'onestop_id': onestop_id,
-		'overlapAverage': overlapAverage,
-		'gapAverage': gapAverage,
-		'startDifferenceAverage': startDifferenceAverage
+		'overlapPercentAverage': overlapPercentAverage,
+		'fetchedAtDifferenceAverage': fetchedAtDifferenceAverage
 	}
 
-	print overlapAverage
-	print gapAverage
-	print startDifferenceAverage
-	return averageOneStopInformation
-
-
+	# status, overlapAverage, gapAverage, startDifferenceAverage = findOverlap(interpretedSchedule)
+	#
+	# header = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
+	# 'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
+	# writeToCSV("%s.csv"%onestop_id, status, header=header)
+	# with open('%s.json'%onestop_id, 'w') as f:
+	# 	f.write(json.dumps(status, default=lambda x:str(x)))
+	#
+	# averageOneStopInformation = {
+	# 	'onestop_id': onestop_id,
+	# 	'overlapAverage': overlapAverage,
+	# 	'gapAverage': gapAverage,
+	# 	'startDifferenceAverage': startDifferenceAverage
+	# }
+	#
+	# print overlapAverage
+	# print gapAverage
+	# print startDifferenceAverage
+	# return averageOneStopInformation
 
 # call function with onestop_id as parameter
 def main():
