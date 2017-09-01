@@ -49,10 +49,9 @@ def findStartAndEndDates(updatedScheduledService):
 
 # convert an dictionary of strings to a dictionary of datetime objects
 def convertToDateTime(scheduled_service):
-
 	updatedScheduledService = {}
 	for date in scheduled_service:
-		official_date = datetime.datetime.strptime(str(date), '%Y-%m-%d')
+		official_date = toDateTime(date)
 		updatedScheduledService[official_date] = scheduled_service[date]
 
 	return updatedScheduledService
@@ -101,6 +100,8 @@ def writeToCSV (filename, status):
 
 	headerRow = ['ID', 'currentSha1', 'nextSha1', 'originalStart', 'originalEnd', 'updatedStart', 'updatedEnd', 'overlapStart',
 	'overlapEnd', 'overlapDifference', 'gapStart', 'gapEnd', 'gapDifference', 'startDifference']
+def toDateTime(value):
+	return datetime.datetime.strptime(str(value), '%Y-%m-%d')
 	with open(filename, 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=headerRow)
 		writer.writeheader()
