@@ -137,14 +137,15 @@ def getScheduledService(sha1, onestop_id, averageFileWriter):
 	)
 
 	r = requests.get('http://transit.land/api/v1/feed_version_infos/', params=params)
-	rJSON = json.loads(r.text)
+	if r:
+		rJSON = json.loads(r.text)
 
-	sortJSON = retrieveElementInList('type', 'FeedVersionInfoStatistics', rJSON['feed_version_infos'])
+		sortJSON = retrieveElementInList('type', 'FeedVersionInfoStatistics', rJSON['feed_version_infos'])
 
-	if sortJSON['data'].get('error'):
-		print sortJSON['data'].get('error')
-	else: 
-		return interpretSchedule(sortJSON['data']['scheduled_service'], sha1)
+		if sortJSON['data'].get('error'):
+			print sortJSON['data'].get('error')
+		else: 
+			return interpretSchedule(sortJSON['data']['scheduled_service'], sha1)
 
 	
 
