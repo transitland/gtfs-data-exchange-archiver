@@ -102,6 +102,7 @@ def interpretSchedule(feedVersion, element):
 		print "\tend shift:", (updatedEnd - end).days
 		print "\toriginal duration:", (end - start).days
 		print "\tupdated duration:", (updatedEnd - updatedStart).days
+		print ""
 
 		rowInfo = {
 			"currentSha1": sha1,
@@ -132,7 +133,7 @@ def findOverlap2(interpretedSchedule):
 	interpretedSchedule = sorted(interpretedSchedule, key = lambda x: (x['fetchedAt']))
 	status = []
 	for current,next_ in zip(interpretedSchedule[:-1], interpretedSchedule[1:]):
-		print "compare %s -> %s"%(current['currentSha1'], next_['currentSha1'])
+		print "compare: %s -> %s"%(current['currentSha1'], next_['currentSha1'])
 		print "\tcurrent:"
 		print current
 		print "\tnext:"
@@ -144,6 +145,7 @@ def findOverlap2(interpretedSchedule):
 		print "\toverlapDays:", overlapDays
 		print "\ttotalTime:", totalTime
 		print "\toverlapPercent:", overlapPercent
+		print ""
 
 		overlapObject = {
 			"currentSha1": current['currentSha1'],
@@ -337,7 +339,7 @@ def processFeed(onestop_id):
 # call function with onestop_id as parameter
 def main():
 	params = {
-		'per_page': 1,
+		'per_page': 'false',
 		'bbox': '-123.321533,36.826875,-120.786438,38.629745',
 		'apikey': APIKEY
 	}
