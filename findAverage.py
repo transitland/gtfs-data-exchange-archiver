@@ -76,6 +76,7 @@ def getScheduledService(sha1, onestop_id, averageFileWriter):
 	start_date = re.findall("\"startDate\":\"([0-9]{4}-[0-9]{2}-[0-9]{2})", r.text)
 	if not start_date:
 		print "No Start Date!", sha1
+		
 	# retrieving the scheduled service
 	start_position = r.text.find('scheduled_service')
 
