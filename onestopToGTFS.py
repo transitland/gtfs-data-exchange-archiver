@@ -49,7 +49,6 @@ def parseFile(gtfs_page, debugger, start_index, end_index):
 	NAME_COUNT = 0
 	currentIndex = 0
 
-	# newCSVFolder = open("NameFirstNewFeeds.csv", "w+")
 	newCSVDocument = csv.writer(open("CSVNewFeedNames.csv", "w"))
 
 	with open('feeds.csv', 'rU') as f:
@@ -84,6 +83,7 @@ def parseFile(gtfs_page, debugger, start_index, end_index):
 						SOURCE_COUNT = SOURCE_COUNT + 1
 		
 				if match:
+					print "Success! ========== "
 					row.append(match)
 					newCSVDocument.writerow(row)
 					SUCCESS_COUNT = SUCCESS_COUNT + 1 

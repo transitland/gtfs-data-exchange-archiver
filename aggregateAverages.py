@@ -26,6 +26,7 @@ def updateGlobalDictionary(average, onestop_id):
 
 def openNewFile(fileName):
 	response = re.findall('Avgs-(.*)\.csv', fileName)
+	print response
 	globalHeaderRow.append(response[0])
 
 	with open(fileName, 'rU') as f:
@@ -38,6 +39,7 @@ def openNewFile(fileName):
 			updateGlobalDictionary(average, response[0])
 
 def findTotalAverage(row): 
+	print row
 	total = float(0)  
 	weeklySums = row[2:]
 	for hours in weeklySums: 
@@ -55,11 +57,12 @@ def reformatDictionary(globalDictionary):
 	return array
 
 def createCSVDocument(globalDictionary): 
-	newCSVDocument = csv.writer(open("CSVNewFeedNames.csv", "w"))
+
 	filename = 'allFeedsAverage.csv'
 
 	reformattedDictionary = reformatDictionary(globalDictionary)
 	reformattedDictionary = sorted(reformattedDictionary, key = lambda x: x['startDate'], reverse=False)
+	
 	with open(filename, 'w') as f:
 		writer = csv.DictWriter(f, fieldnames=globalHeaderRow)
 		writer.writeheader()
@@ -68,8 +71,10 @@ def createCSVDocument(globalDictionary):
 
 def main(): 
 	fileNames = retrieveFileNames()
-	for file in fileNames:
-		openNewFile(file)
+	print fileNames
+
+	for nameOfFile in fileNames:
+		openNewFile(nameOfFile)
 
 	createCSVDocument(globalDictionary)
 
